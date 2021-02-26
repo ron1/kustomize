@@ -56,6 +56,11 @@ https://github.com/hashicorp/go-getter#url-format
 // NewCmdBuild creates a new build command.
 func NewCmdBuild(cmdName string, out io.Writer) *cobra.Command {
 	var o Options
+	return NewCmdBuildWithOptions(cmdName, out, &o)
+}
+
+// NewCmdBuildWithOptions creates a new build command with Options parameter.
+func NewCmdBuildWithOptions(cmdName string, out io.Writer, o *Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: cmdName + " {path}",
 		Short: "Print configuration per contents of " +
@@ -144,12 +149,17 @@ func (o *Options) makeOptions() *krusty.Options {
 
 func (o *Options) RunBuild(out io.Writer) error {
 	fSys := filesys.MakeFsOnDisk()
-	k := krusty.MakeKustomizer(fSys, o.makeOptions())
-	m, err := k.Run(o.kustomizationPath)
+	m, err := o.RunBuildWithoutEmitter(fSys)
 	if err != nil {
 		return err
 	}
 	return o.emitResources(out, fSys, m)
+}
+
+// RunBuildWithoutEmitter Add fSys parameter and return resources
+func (o *Options) RunBuildWithoutEmitter(fSys filesys.FileSystem) (resmap.ResMap, error) {
+	k := krusty.MakeKustomizer(fSys, o.makeOptions())
+	return k.Run(o.kustomizationPath)
 }
 
 func (o *Options) emitResources(
